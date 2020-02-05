@@ -1,0 +1,71 @@
+version: '3'
+
+#VOLUMES
+# volumes:
+#   my-dir:
+#     dirver
+
+#NETWORK
+networks: 
+  my-network:
+    driver: bridge
+
+#SERVICES
+services:
+  #WEBAPI
+  web-api:
+    container_name: app-api
+    image: acbapp:3.1
+    hostname: app-api
+    restart: always
+    networks: 
+        - my-network
+    ports:
+      - 6789:6789 #api port    
+    depends_on:
+    - mysql-db
+  #MyAdmin
+  php-myadmin:
+    container_name: my-admin
+    image: phpmyadmin/phpmyadmin:latest
+    hostname: myadmin
+    restart: always
+    networks: 
+        - my-network
+    ports:
+      - 8081:80    
+    environment:
+      PMA_HOST: mysql-develop
+      MYSQL_ROOT_PASSWORD: admin
+
+  #container MySql
+  mysql-db:
+    container_name: mysql-develop
+    image: mysql:latest
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+    hostname: mysql-develop
+    networks: 
+        - my-network
+    restart: always 
+    environment:
+      MYSQL_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: admin
+  #MYNGINX-SERVER
+  nginx:
+    container_name: my-nginx
+    image: nginx:latest
+    hostname: my-nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./dist:/usr/share/nginx/html
+    command: [nginx-debug, '-g', 'daemon off;'] 
+    networks: 
+        - my-network
+    ports:
+      - 80:80    
+    depends_on:
+      - web-api
+ 
